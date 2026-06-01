@@ -80,6 +80,8 @@ async function login(username, password) {
 // ─── Logout ─────────────────────────────────────────────────────────────────
 async function logout(sessionToken) {
   try {
+    const query = new Parse.Query(Parse.User);
+    const user = await query.get(sessionToken);
     await Parse.User.logOut();
     console.log(`✓ Logout bem-sucedido`);
   } catch (err) {
@@ -122,11 +124,11 @@ function socketAuthMiddleware(socket, next) {
 }
 
 module.exports = {
-  generateToken,
-  verifyToken,
   register,
   login,
   logout,
+  generateToken,
+  verifyToken,
   authMiddleware,
   socketAuthMiddleware,
 };

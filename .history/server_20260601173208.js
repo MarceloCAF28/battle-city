@@ -5,11 +5,6 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const cors = require('cors');
-
-// Importar configuração do Back4App (inicializa Parse)
-require('./back4app-config');
-
-// Importar módulos
 const db = require('./db');
 const auth = require('./auth');
 
