@@ -28,49 +28,15 @@ Parse.Object.registerSubclass('MatchPlayer', MatchPlayer);
 // ─── Inicializar ────────────────────────────────────────────────────────
 async function initDB() {
   try {
-    console.log('🗄️  Inicializando banco de dados Back4App...');
-    
-    // Criar classes se não existirem
-    await createClassesIfNotExist();
-    
-    // Testar conexão
     const testObject = new Parse.Object('TestConnection');
     testObject.set('test', true);
-    testObject.set('timestamp', new Date());
     await testObject.save();
     await testObject.destroy();
-    
-    console.log('✓ Conexão com Back4App estabelecida com sucesso');
+    console.log('✓ Conexão com Back4App estabelecida');
     return Promise.resolve();
   } catch (err) {
-    console.error('❌ Erro ao inicializar Back4App:', err);
+    console.error('❌ Erro ao conectar Back4App:', err);
     return Promise.reject(err);
-  }
-}
-
-async function createClassesIfNotExist() {
-  try {
-    const classNames = ['PlayerStats', 'Match', 'MatchPlayer'];
-    
-    for (const className of classNames) {
-      try {
-        const query = new Parse.Query(className);
-        await query.first();
-        console.log(`  ✓ Classe ${className} existe`);
-      } catch (err) {
-        // Classe não existe, criar objeto dummy para forçar criação
-        console.log(`  📝 Criando classe ${className}...`);
-        const obj = new Parse.Object(className);
-        obj.set('_initialized', true);
-        obj.set('createdAt', new Date());
-        await obj.save();
-        await obj.destroy();
-        console.log(`  ✓ Classe ${className} criada`);
-      }
-    }
-  } catch (err) {
-    console.error('❌ Erro ao criar classes:', err.message);
-    throw err;
   }
 }
 

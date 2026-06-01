@@ -33,14 +33,12 @@ app.get('/health', (req, res) => {
 });
 
 // Inicializar banco de dados
-db.initDB()
-  .then(() => {
-    console.log('✓ Banco de dados inicializado com sucesso');
-  })
-  .catch(err => {
-    console.error('❌ Erro crítico ao inicializar DB:', err);
-    process.exit(1);
-  });
+db.initDB().catch(err => {
+  console.error('❌ Erro ao inicializar DB:', err);
+  process.exit(1);
+}).then(() => {
+  console.log('✓ Banco de dados pronto');
+});
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const TICK_RATE        = 30;          // server ticks per second

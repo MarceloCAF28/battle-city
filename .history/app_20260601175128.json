@@ -1,0 +1,42 @@
+{
+  "name": "battle-city-multiplayer",
+  "description": "Battle City NES clone - Multiplayer via Socket.io",
+  "keywords": ["game", "socket.io", "battle-city", "multiplayer"],
+  "repository": "https://github.com/andrepacoca29-a11y/battle-city",
+  "success_url": "/",
+  "env": {
+    "NODE_ENV": {
+      "description": "Environment mode",
+      "value": "production"
+    },
+    "PORT": {
+      "description": "Server port",
+      "value": "8080"
+    },
+    "BACK4APP_APP_ID": {
+      "description": "Back4App Application ID",
+      "value": "M44vzQx2pIIofQDNpghpHl0J3n4LKF70BiKNKuED"
+    },
+    "BACK4APP_JS_KEY": {
+      "description": "Back4App JavaScript Key",
+      "value": "ZVNueKhFqeuR5OkAFd6yeUSNbzlqXmjRySHXslzI"
+    },
+    "BACK4APP_CLIENT_KEY": {
+      "description": "Back4App Client Key",
+      "value": "CjZAJPILYnqXmrlSUMcTLtEACHbmUe6Y1mrIwPb1"
+    },
+    "JWT_SECRET": {
+      "description": "Secret key for JWT tokens",
+      "value": "sua-chave-jwt-segura-mude-em-producao",
+      "required": true
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ],
+  "scripts": {
+    "postdeploy": "npm start"
+  }
+}

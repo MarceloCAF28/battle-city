@@ -30,8 +30,6 @@ async function register(username, email, password) {
       throw new Error('Senha deve ter pelo menos 6 caracteres');
     }
 
-    console.log(`📝 Registrando usuário: ${username}`);
-
     const user = new Parse.User();
     user.set('username', username);
     user.set('email', email || null);
@@ -42,7 +40,7 @@ async function register(username, email, password) {
 
     const token = generateToken(user.id);
 
-    console.log(`✓ Usuário registrado com sucesso: ${username} (ID: ${user.id})`);
+    console.log(`✓ Usuário registrado: ${username}`);
 
     return {
       userId: user.id,
@@ -62,12 +60,10 @@ async function register(username, email, password) {
 // ─── Login ──────────────────────────────────────────────────────────────────
 async function login(username, password) {
   try {
-    console.log(`🔐 Fazendo login: ${username}`);
-    
     const user = await Parse.User.logIn(username, password);
     const token = generateToken(user.id);
 
-    console.log(`✓ Login bem-sucedido: ${username} (ID: ${user.id})`);
+    console.log(`✓ Login bem-sucedido: ${username}`);
 
     return {
       userId: user.id,

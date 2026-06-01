@@ -62,12 +62,10 @@ async function register(username, email, password) {
 // ─── Login ──────────────────────────────────────────────────────────────────
 async function login(username, password) {
   try {
-    console.log(`🔐 Fazendo login: ${username}`);
-    
     const user = await Parse.User.logIn(username, password);
     const token = generateToken(user.id);
 
-    console.log(`✓ Login bem-sucedido: ${username} (ID: ${user.id})`);
+    console.log(`✓ Login bem-sucedido: ${username}`);
 
     return {
       userId: user.id,
