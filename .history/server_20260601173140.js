@@ -661,28 +661,5 @@ io.on('connection', (socket) => {
   });
 });
 
-// Error handling global
-process.on('uncaughtException', (err) => {
-  console.error('❌ Uncaught Exception:', err);
-  process.exit(1);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
-  process.exit(1);
-});
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ ok: false, error: 'Rota não encontrada' });
-});
-
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`
-🎮 Battle City Server iniciado
-📡 Porta: ${PORT}
-🌍 Endereço: 0.0.0.0:${PORT}
-🗄️  Banco de dados: ${process.env.DATA_DIR ? 'Customizado' : 'Local'}
-  `);
-});
+server.listen(PORT, '0.0.0.0', () => console.log(`Battle City server on :${PORT}`));

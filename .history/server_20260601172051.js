@@ -29,10 +29,8 @@ app.get('/health', (req, res) => {
 
 // Inicializar banco de dados
 db.initDB().catch(err => {
-  console.error('❌ Erro ao inicializar DB:', err);
+  console.error('Erro ao inicializar DB:', err);
   process.exit(1);
-}).then(() => {
-  console.log('✓ Banco de dados pronto');
 });
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -503,13 +501,10 @@ class RoomState {
 // Register
 app.post('/api/auth/register', async (req, res) => {
   try {
-    console.log('📝 POST /api/auth/register', req.body.username);
     const { username, email, password } = req.body;
     const result = await auth.register(username, email, password);
-    console.log('✓ Usuário registrado:', username);
     res.json({ ok: true, ...result });
   } catch (err) {
-    console.error('❌ Erro ao registrar:', err.message);
     res.status(400).json({ ok: false, error: err.message });
   }
 });
@@ -517,13 +512,10 @@ app.post('/api/auth/register', async (req, res) => {
 // Login
 app.post('/api/auth/login', async (req, res) => {
   try {
-    console.log('🔐 POST /api/auth/login', req.body.username);
     const { username, password } = req.body;
     const result = await auth.login(username, password);
-    console.log('✓ Login bem-sucedido:', username);
     res.json({ ok: true, ...result });
   } catch (err) {
-    console.error('❌ Erro ao fazer login:', err.message);
     res.status(400).json({ ok: false, error: err.message });
   }
 });
@@ -661,28 +653,5 @@ io.on('connection', (socket) => {
   });
 });
 
-// Error handling global
-process.on('uncaughtException', (err) => {
-  console.error('❌ Uncaught Exception:', err);
-  process.exit(1);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
-  process.exit(1);
-});
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ ok: false, error: 'Rota não encontrada' });
-});
-
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`
-🎮 Battle City Server iniciado
-📡 Porta: ${PORT}
-🌍 Endereço: 0.0.0.0:${PORT}
-🗄️  Banco de dados: ${process.env.DATA_DIR ? 'Customizado' : 'Local'}
-  `);
-});
+server.listen(PORT, '0.0.0.0', () => console.log(`Battle City server on :${PORT}`));

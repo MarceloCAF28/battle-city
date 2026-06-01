@@ -24,18 +24,6 @@ const db = new sqlite3.Database(dbPath, (err) => {
 function initDB() {
   return new Promise((resolve, reject) => {
     db.serialize(() => {
-      let tableCount = 0;
-      let errorOccurred = false;
-      const totalTables = 4;
-
-      const checkCompletion = () => {
-        tableCount++;
-        if (tableCount === totalTables && !errorOccurred) {
-          console.log('✓ Todas as tabelas inicializadas');
-          resolve();
-        }
-      };
-
       // Tabela de usuários
       db.run(`
         CREATE TABLE IF NOT EXISTS users (
@@ -46,15 +34,7 @@ function initDB() {
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
-      `, function(err) {
-        if (err) {
-          console.error('❌ Erro ao criar tabela users:', err);
-          errorOccurred = true;
-          reject(err);
-        } else {
-          checkCompletion();
-        }
-      });
+      `);
 
       // Tabela de partidas
       db.run(`
@@ -66,15 +46,7 @@ function initDB() {
           duration INTEGER,
           FOREIGN KEY(winner_id) REFERENCES users(id)
         )
-      `, function(err) {
-        if (err) {
-          console.error('❌ Erro ao criar tabela matches:', err);
-          errorOccurred = true;
-          reject(err);
-        } else {
-          checkCompletion();
-        }
-      });
+      `);
 
       // Tabela de participação em partidas
       db.run(`
@@ -90,15 +62,7 @@ function initDB() {
           FOREIGN KEY(match_id) REFERENCES matches(id),
           FOREIGN KEY(user_id) REFERENCES users(id)
         )
-      `, function(err) {
-        if (err) {
-          console.error('❌ Erro ao criar tabela match_players:', err);
-          errorOccurred = true;
-          reject(err);
-        } else {
-          checkCompletion();
-        }
-      });
+      `);
 
       // Tabela de estatísticas gerais
       db.run(`
@@ -112,23 +76,14 @@ function initDB() {
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY(user_id) REFERENCES users(id)
         )
-      `, function(err) {
-        if (err) {
-          console.error('❌ Erro ao criar tabela player_stats:', err);
-          errorOccurred = true;
-          reject(err);
-        } else {
-          checkCompletion();
+      `, (err) => {
+        if (err) reject(err);
+        else {
+          console.log('✓ Tabelas inicializadas');
+          resolve();
         }
       });
     });
-
-    // Timeout de 5 segundos para inicialização
-    setTimeout(() => {
-      if (!resolve.called) {
-        reject(new Error('Timeout ao inicializar banco de dados'));
-      }
-    }, 5000);
   });
 }
 
