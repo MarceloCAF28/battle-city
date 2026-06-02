@@ -128,6 +128,33 @@ const ctx     = canvas.getContext('2d');
 canvas.width  = CANVAS_W;
 canvas.height = CANVAS_H;
 
+const spritesheet = new Image();
+spritesheet.src = 'assets/spritesheet.png';
+ctx.imageSmoothingEnabled = false; // Mantém os pixels nítidos (Retro)
+
+const SPRITE_MAP = {
+  // Cenário (16x16 pixels na folha)
+  brick: { x: 256, y: 0,  w: 16, h: 16 },
+  steel: { x: 256, y: 16, w: 16, h: 16 },
+  water: { x: 256, y: 32, w: 16, h: 16 },
+  bush:  { x: 288, y: 32, w: 16, h: 16 },
+  
+  // Tanque Amarelo (Você)
+  tank_yellow: {
+    up:    { x: 0,  y: 0, w: 16, h: 16 },
+    left:  { x: 32, y: 0, w: 16, h: 16 },
+    down:  { x: 64, y: 0, w: 16, h: 16 },
+    right: { x: 96, y: 0, w: 16, h: 16 }
+  },
+  // Tanque Verde (Outros Jogadores)
+  tank_green: {
+    up:    { x: 0,  y: 128, w: 16, h: 16 },
+    left:  { x: 32, y: 128, w: 16, h: 16 },
+    down:  { x: 64, y: 128, w: 16, h: 16 },
+    right: { x: 96, y: 128, w: 16, h: 16 }
+  }
+};
+
 // Sprite cache
 const spriteCache = {};
 
@@ -270,13 +297,20 @@ function renderLoop(ts) {
   const dt = ts - lastTime; lastTime = ts;
   ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
   drawBackground();
-  if (map) drawMap();
+  
+  // 1. Desenha o fundo e blocos normais (tijolo, aço, água)
+  if (map) drawMap('background'); 
+  
   const state = interpolatedState();
   if (state) {
     drawPowerups(state.powerups);
     drawBullets(state.bullets);
-    drawPlayers(state.players);
+    drawPlayers(state.players); // 2. Desenha os tanques
   }
+  
+  // 3. Desenha os arbustos por cima de tudo para dar camuflagem!
+  if (map) drawMap('foreground'); 
+  
   requestAnimationFrame(renderLoop);
 }
 
@@ -296,48 +330,38 @@ function drawBackground() {
   }
 }
 
-function drawMap() {
+function drawMap(layer) {
   for (let r = 0; r < MAP_ROWS; r++) {
     for (let c = 0; c < MAP_COLS; c++) {
       const tile = map[r][c];
       if (tile === 0) continue;
       const x = c * TILE, y = r * TILE;
-      if (tile === 1) drawBrick(x, y);
-      else if (tile === 2) drawSteel(x, y);
+
+      if (layer === 'background') {
+        if (tile === 1) drawBrick(x, y);
+        else if (tile === 2) drawSteel(x, y);
+        else if (tile === 3) drawWater(x, y);
+      } else if (layer === 'foreground') {
+        if (tile === 4) drawBush(x, y);
+      }
     }
   }
 }
 
 function drawBrick(x, y) {
-  ctx.fillStyle = '#8b3a2a';
-  ctx.fillRect(x+1, y+1, TILE-2, TILE-2);
-  // mortar lines
-  ctx.fillStyle = '#5c2419';
-  ctx.fillRect(x+1, y+TILE/2-1, TILE-2, 2);
-  ctx.fillRect(x+TILE/2-1, y+1, 2, TILE/2-2);
-  ctx.fillRect(x+TILE/4-1, y+TILE/2+1, 2, TILE/2-2);
-  ctx.fillRect(x+3*TILE/4-1, y+TILE/2+1, 2, TILE/2-2);
-  // highlight
-  ctx.fillStyle = 'rgba(255,200,150,0.08)';
-  ctx.fillRect(x+1, y+1, TILE-2, 3);
+  ctx.drawImage(spritesheet, SPRITE_MAP.brick.x, SPRITE_MAP.brick.y, 16, 16, x, y, TILE, TILE);
 }
 
 function drawSteel(x, y) {
-  const g = ctx.createLinearGradient(x, y, x+TILE, y+TILE);
-  g.addColorStop(0, '#8a9baa');
-  g.addColorStop(0.5, '#c5d5e4');
-  g.addColorStop(1, '#5a6e7c');
-  ctx.fillStyle = g;
-  ctx.fillRect(x+1, y+1, TILE-2, TILE-2);
-  // rivets
-  ctx.fillStyle = '#6a7f8e';
-  const rivetPos = [[x+5,y+5],[x+TILE-7,y+5],[x+5,y+TILE-7],[x+TILE-7,y+TILE-7]];
-  for (const [rx,ry] of rivetPos) {
-    ctx.beginPath(); ctx.arc(rx,ry,2.5,0,Math.PI*2); ctx.fill();
-  }
-  ctx.strokeStyle = '#4a5f6e';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(x+1, y+1, TILE-2, TILE-2);
+  ctx.drawImage(spritesheet, SPRITE_MAP.steel.x, SPRITE_MAP.steel.y, 16, 16, x, y, TILE, TILE);
+}
+
+function drawWater(x, y) {
+  ctx.drawImage(spritesheet, SPRITE_MAP.water.x, SPRITE_MAP.water.y, 16, 16, x, y, TILE, TILE);
+}
+
+function drawBush(x, y) {
+  ctx.drawImage(spritesheet, SPRITE_MAP.bush.x, SPRITE_MAP.bush.y, 16, 16, x, y, TILE, TILE);
 }
 
 function drawPlayers(players) {
@@ -353,79 +377,34 @@ function drawPlayers(players) {
 }
 
 function drawTank(p) {
-  ctx.save();
-  ctx.translate(p.x + TANK_SIZE/2, p.y + TANK_SIZE/2);
+  // Define o grupo de sprites baseado em quem é o dono do tanque
+  const spriteGroup = (p.id === myId) ? SPRITE_MAP.tank_yellow : SPRITE_MAP.tank_green;
+  
+  // Pega a direção correta calculada pelo servidor
+  const s = spriteGroup[p.dir] || spriteGroup.up;
 
-  // Como o tanque foi desenhado apontando para cima, 
-  // 'up' é 0 radianos, e o resto gira a partir daí.
-  const angle = { up: 0, down: Math.PI, left: -Math.PI/2, right: Math.PI/2 }[p.dir] || 0;
-  ctx.rotate(angle);
+  // Desenha o sprite do tanque
+  ctx.drawImage(
+    spritesheet,
+    s.x, s.y, s.w, s.h,
+    p.x, p.y, TANK_SIZE, TANK_SIZE
+  );
 
-  const s = TANK_SIZE;
-  const hs = s / 2;
-
-  // shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.3)';
-  ctx.beginPath();
-  ctx.ellipse(2, 3, hs-2, hs/2-1, 0, 0, Math.PI*2);
-  ctx.fill();
-
-  // tracks
-  ctx.fillStyle = '#333';
-  ctx.fillRect(-hs, -hs, 6, s);
-  ctx.fillRect(hs-6, -hs, 6, s);
-
-  // track details
-  ctx.fillStyle = '#555';
-  for (let i = -hs+2; i < hs-2; i += 6) {
-    ctx.fillRect(-hs+1, i, 4, 3);
-    ctx.fillRect(hs-5, i, 4, 3);
-  }
-
-  // body
-  const bodyGrad = ctx.createLinearGradient(-hs+6, -hs+2, hs-6, hs-2);
-  bodyGrad.addColorStop(0, lighten(p.color, 40));
-  bodyGrad.addColorStop(1, p.color);
-  ctx.fillStyle = bodyGrad;
-  ctx.beginPath();
-  ctx.roundRect(-hs+6, -hs+2, s-12, s-4, 3);
-  ctx.fill();
-
-  // turret base
-  ctx.fillStyle = darken(p.color, 20);
-  ctx.beginPath();
-  ctx.arc(0, 0, hs/2+1, 0, Math.PI*2);
-  ctx.fill();
-
-  // barrel
-  ctx.fillStyle = '#222';
-  ctx.fillRect(-2, -hs+2, 4, hs-2);
-
-  // barrel tip
-  ctx.fillStyle = '#444';
-  ctx.fillRect(-3, -hs+2, 6, 4);
-
-  // is-me indicator
+  // Indicador sutil ao redor do seu próprio tanque
   if (p.id === myId) {
-    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([3,3]);
-    ctx.beginPath();
-    ctx.rect(-hs-2, -hs-2, s+4, s+4);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(p.x - 2, p.y - 2, TANK_SIZE + 4, TANK_SIZE + 4);
   }
 
-  // shield ring
+  // Anel do Escudo (Power-up)
   if (p.shield) {
     ctx.strokeStyle = `rgba(100,200,255,${0.5 + 0.3 * Math.sin(Date.now()/200)})`;
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(0, 0, hs+5, 0, Math.PI*2);
+    ctx.arc(p.x + TANK_SIZE/2, p.y + TANK_SIZE/2, TANK_SIZE/2 + 4, 0, Math.PI*2);
     ctx.stroke();
   }
-
-  ctx.restore();
 }
 
 function drawDestroyedTank(p) {

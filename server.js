@@ -55,7 +55,7 @@ const MAP_COLS        = 26;
 const MAP_ROWS        = 26;
 const TANK_SIZE       = 28;
 const BULLET_SPEED    = 16;           // tiles/s * (TILE/TICK_RATE)  → px per tick
-const TANK_SPEED      = 2.2;         // px per tick
+const TANK_SPEED      = 3.3;         // px per tick
 const MAX_PLAYERS     = 6;
 const RESPAWN_DELAY   = 3000;        // ms
 const POWERUP_INTERVAL= 12000;       // ms
@@ -64,56 +64,62 @@ const POWERUP_DURATION= 10000;       // ms for shield / extra-bullets
 // ─── Map Templates ───────────────────────────────────────────────────────────
 // 0=empty 1=brick 2=steel
 function buildMap() {
-  const M = Array.from({ length: MAP_ROWS }, () => Array(MAP_COLS).fill(0));
+  const M = Array.from({ length: MAP_ROWS }, () => Array(MAP_COLS).fill(0)); //
 
-  // border steel
-  for (let c = 0; c < MAP_COLS; c++) { M[0][c] = 2; M[MAP_ROWS-1][c] = 2; }
-  for (let r = 0; r < MAP_ROWS; r++) { M[r][0] = 2; M[r][MAP_COLS-1] = 2;  }
+  // 1. Bordas de aço padrão
+  for (let c = 0; c < MAP_COLS; c++) { M[0][c] = 2; M[MAP_ROWS-1][c] = 2; } //
+  for (let r = 0; r < MAP_ROWS; r++) { M[r][0] = 2; M[r][MAP_COLS-1] = 2;  } //
 
-  // interior pattern — symmetric brick clusters
-  const brickZones = [
-    [2,2],[2,3],[3,2],[3,3],
-    [2,10],[2,11],[3,10],[3,11],
-    [2,14],[2,15],[3,14],[3,15],
-    [2,22],[2,23],[3,22],[3,23],
-    [6,2],[6,3],[7,2],[7,3],
-    [6,6],[6,7],[7,6],[7,7],
-    [6,10],[6,11],[7,10],[7,11],
-    [6,14],[6,15],[7,14],[7,15],
-    [6,18],[6,19],[7,18],[7,19],
-    [6,22],[6,23],[7,22],[7,23],
-    [10,2],[10,3],[11,2],[11,3],
-    [10,6],[10,7],[11,6],[11,7],
-    [10,10],[10,11],[11,10],[11,11],
-    [10,14],[10,15],[11,14],[11,15],
-    [10,18],[10,19],[11,18],[11,19],
-    [10,22],[10,23],[11,22],[11,23],
-    [14,2],[14,3],[15,2],[15,3],
-    [14,6],[14,7],[15,6],[15,7],
-    [14,10],[14,11],[15,10],[15,11],
-    [14,14],[14,15],[15,14],[15,15],
-    [14,18],[14,19],[15,18],[15,19],
-    [14,22],[14,23],[15,22],[15,23],
-    [18,2],[18,3],[19,2],[19,3],
-    [18,6],[18,7],[19,6],[19,7],
-    [18,10],[18,11],[19,10],[19,11],
-    [18,14],[18,15],[19,14],[19,15],
-    [18,18],[18,19],[19,18],[19,19],
-    [18,22],[18,23],[19,22],[19,23],
-    [22,2],[22,3],[23,2],[23,3],
-    [22,10],[22,11],[23,10],[23,11],
-    [22,14],[22,15],[23,14],[23,15],
-    [22,22],[22,23],[23,22],[23,23],
-  ];
-  const steelZones = [
-    [5,5],[5,20],[20,5],[20,20],
-    [12,12],[13,12],[12,13],[13,13],
-  ];
+  // 2. Sorteia entre 4 opções (O original + 3 novos)
+  const mapStyle = Math.floor(Math.random() * 4) + 1;
 
-  for (const [r,c] of brickZones) if (r>0&&r<MAP_ROWS-1&&c>0&&c<MAP_COLS-1) M[r][c]=1;
-  for (const [r,c] of steelZones) if (r>0&&r<MAP_ROWS-1&&c>0&&c<MAP_COLS-1) M[r][c]=2;
+  if (mapStyle === 1) {
+    // LAYOUT 1: SEU MAPA ORIGINAL INTACTO (Recuperado do seu arquivo antigo)
+    const brickZones = [
+      [2,2],[2,3],[3,2],[3,3],[2,10],[2,11],[3,10],[3,11],[2,14],[2,15],[3,14],[3,15],[2,22],[2,23],[3,22],[3,23],
+      [6,2],[6,3],[7,2],[7,3],[6,6],[6,7],[7,6],[7,7],[6,10],[6,11],[7,10],[7,11],[6,14],[6,15],[7,14],[7,15],
+      [6,18],[6,19],[7,18],[7,19],[6,22],[6,23],[7,22],[7,23],[10,2],[10,3],[11,2],[11,3],[10,6],[10,7],[11,6],[11,7],
+      [10,10],[10,11],[11,10],[11,11],[10,14],[10,15],[11,14],[11,15],[10,18],[10,19],[11,18],[11,19],[10,22],[10,23],[11,22],[11,23],
+      [14,2],[14,3],[15,2],[15,3],[14,6],[14,7],[15,6],[15,7],[14,10],[14,11],[15,10],[15,11],[14,14],[14,15],[15,14],[15,15],
+      [14,18],[14,19],[15,18],[15,19],[14,22],[14,23],[15,22],[15,23],[18,2],[18,3],[19,2],[19,3],[18,6],[18,7],[19,6],[19,7],
+      [18,10],[18,11],[19,10],[19,11],[18,14],[18,15],[19,14],[19,15],[18,18],[18,19],[19,18],[19,19],[18,22],[18,23],[19,22],[19,23],
+      [22,2],[22,3],[23,2],[23,3],[22,10],[22,11],[23,10],[23,11],[22,14],[22,15],[23,14],[23,15],[22,22],[22,23],[23,22],[23,23]
+    ]; //
+    const steelZones = [[5,5],[5,20],[20,5],[20,20],[12,12],[13,12],[12,13],[13,13]]; //
+    for (const [r,c] of brickZones) M[r][c] = 1; //
+    for (const [r,c] of steelZones) M[r][c] = 2; //
 
-  return M;
+  } else if (mapStyle === 2) {
+    // LAYOUT 2: Clássico Modificado (Lagos e arbustos)
+    const bricks = [[2,2],[2,3],[3,2],[3,3],[2,22],[2,23],[3,22],[3,23],[6,6],[6,7],[7,6],[7,7],[6,18],[6,19],[7,18],[7,19],[10,2],[10,3],[11,2],[11,3],[10,22],[10,23],[11,22],[11,23],[14,6],[14,7],[15,6],[15,7],[14,18],[14,19],[15,18],[15,19],[18,2],[18,3],[19,2],[19,3],[18,22],[18,23],[19,22],[19,23],[22,10],[22,11],[23,10],[23,11],[22,14],[22,15],[23,14],[23,15]]; //
+    const steels = [[5,5],[5,20],[20,5],[20,20]]; //
+    const waters = [[12,11],[12,12],[12,13],[12,14],[13,11],[13,12],[13,13],[13,14]]; //
+    const bushes = [[4,12],[4,13],[5,12],[5,13],[20,12],[20,13],[21,12],[21,13]]; //
+    for (const [r,c] of bricks) M[r][c] = 1; //
+    for (const [r,c] of steels) M[r][c] = 2; //
+    for (const [r,c] of waters) M[r][c] = 3; //
+    for (const [r,c] of bushes) M[r][c] = 4; //
+
+  } else if (mapStyle === 3) {
+    // LAYOUT 3: Canais de Água (Rios cruzados)
+    for (let i = 4; i < 22; i++) { if (i !== 12 && i !== 13) { M[12][i] = 3; M[i][12] = 3; } } //
+    const bricks = [[10,10],[10,11],[11,10],[14,10],[15,10],[15,11],[10,14],[10,15],[11,15],[14,15],[15,14],[15,15]]; //
+    const steels = [[11,11],[11,14],[14,11],[14,14]]; //
+    const bushes = [[3,3],[3,22],[22,3],[22,22],[12,12],[12,13],[13,12],[13,13]]; //
+    for (const [r,c] of bricks) M[r][c] = 1; //
+    for (const [r,c] of steels) M[r][c] = 2; //
+    for (const [r,c] of bushes) M[r][c] = 4; //
+
+  } else {
+    // LAYOUT 4: Labirinto Florestal (Densidade de arbustos)
+    for (let r = 4; r < 22; r++) { for (let c = 4; c < 22; c++) { if ((r < 10 || r > 15) && (c < 10 || c > 15)) { if ((r + c) % 3 !== 0) M[r][c] = 4; } } } //
+    const bricks = [[12,4],[12,5],[12,6],[13,4],[13,5],[13,6],[12,19],[12,20],[12,21],[13,19],[13,20],[13,21]]; //
+    const steels = [[8,12],[9,12],[16,12],[17,12],[12,8],[12,9],[12,16],[12,17]]; //
+    for (const [r,c] of bricks) M[r][c] = 1; //
+    for (const [r,c] of steels) M[r][c] = 2; //
+  }
+
+  return M; //
 }
 
 // ─── Spawn Positions ─────────────────────────────────────────────────────────
@@ -366,15 +372,17 @@ class RoomState {
       [nx+TANK_SIZE-1, ny+TANK_SIZE-1],
     ];
     for (const [cx,cy] of corners) {
-      if (tileAt(this.map,cx,cy) !== 0) return false;
+      const tile = tileAt(this.map, cx, cy);
+      // ALTERAÇÃO: O tanque será bloqueado se bater em Tijolo(1), Aço(2) ou Água(3)
+      if (tile === 1 || tile === 2 || tile === 3) return false;
     }
     // tank vs tank collision
     for (const other of this.players.values()) {
-      if (other.id === player.id) continue;
-      if (!other.alive && !other.disconnected) continue;
-      if (rectOverlap(nx,ny,TANK_SIZE,TANK_SIZE, other.x,other.y,TANK_SIZE,TANK_SIZE)) return false;
+      if (other.id === player.id) continue; //
+      if (!other.alive && !other.disconnected) continue; //
+      if (rectOverlap(nx,ny,TANK_SIZE,TANK_SIZE, other.x,other.y,TANK_SIZE,TANK_SIZE)) return false; //
     }
-    return true;
+    return true; //
   }
 
   spawnBullet(player) {
