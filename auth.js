@@ -100,7 +100,77 @@ async function syncUserToDatabase(firebaseUser) {
   }
 }
 
+// ─── Registrar Novo Usuário ────────────────────────────────────────────────
+async function register(username, email, password) {
+  try {
+    if (!username || !email || !password) {
+      throw new Error('Username, email e password são obrigatórios');
+    }
+
+    // Criar usuário no Firebase Admin
+    const { createFirebaseUser } = require('./firebase');
+    const firebaseUser = await createFirebaseUser(email, password, username);
+
+    // Sincronizar com banco de dados
+    const dbUser = await syncUserToDatabase(firebaseUser);
+
+    return {
+      userId: dbUser.id,
+      firebaseUID: firebaseUser.uid,
+      username: dbUser.username,
+      email: dbUser.email,
+    };
+  } catch (error) {
+    console.error('❌ Erro ao registrar:', error.message);
+    throw error;
+  }
+}
+
+// ─── Login de Usuário ──────────────────────────────────────────────────────
+async function login(username, password) {
+  try {
+    if (!username || !password) {
+      throw new Error('Username e password são obrigatórios');
+    }
+
+    // Buscar usuário no banco de dados
+    const user = await db.getUserByUsername(username);
+    if (!user) {
+      throw new Error('Usuário não encontrado');
+    }
+
+    // Verificar senha com bcryptjs
+    const bcrypt = require('bcryptjs');
+    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+    if (!isPasswordValid) {
+      throw new Error('Senha incorreta');
+    }
+
+    // Gerar token JWT (simples para este caso)
+    const jwt = require('jsonwebtoken');
+    const JWT_SECRET = process.env.JWT_SECRET || 'seu_secret_super_seguro';
+    const token = jwt.sign(
+      { uid: user.firebase_uid, email: user.email, userId: user.id },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    return {
+      token,
+      userId: user.id,
+      firebaseUID: user.firebase_uid,
+      username: user.username,
+      email: user.email,
+    };
+  } catch (error) {
+    console.error('❌ Erro ao fazer login:', error.message);
+    throw error;
+  }
+}
+
 module.exports = {
+  register,
+  login,
   verifyToken: verifyFirebaseToken,
   authMiddleware,
   socketAuthMiddleware,
