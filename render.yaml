@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: battle-city
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: npm install --legacy-peer-deps
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+    disk:
+      name: sqlite-data
+      mountPath: /app/data
+      sizeGB: 1
