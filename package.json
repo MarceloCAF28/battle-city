@@ -5,7 +5,10 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "build": "echo 'Build complete' || true",
+    "heroku-postbuild": "echo 'Heroku/Back4App build hook'",
+    "postinstall": "echo 'Dependencies installed'"
   },
   "engines": {
     "node": ">=18"

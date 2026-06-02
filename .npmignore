@@ -1,0 +1,10 @@
+# Dependencies to ignore from npm
+.history
+.git
+.env
+.DS_Store
+*.log
+node_modules/
+dist/
+build/
+public/test
