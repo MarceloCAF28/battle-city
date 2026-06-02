@@ -5,6 +5,57 @@ let currentToken = null;
 let currentUserId = null;
 let currentUsername = null;
 
+// Firebase client imports (será carregado dinamicamente)
+let firebaseAuth = null;
+let signInWithCustomToken = null;
+
+// ─── Inicializar Firebase Client ────────────────────────────────────────────
+async function initFirebaseClient() {
+  try {
+    if (firebaseAuth) return; // Já inicializado
+    
+    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js");
+    const { getAuth, signInWithCustomToken: signIn } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js");
+    
+    signInWithCustomToken = signIn;
+    
+    const firebaseConfig = {
+      apiKey: "AIzaSyCFl9ooAgteF4lA2KNB0MMkOMs-nOjN-80",
+      authDomain: "battle-city-bd36e.firebaseapp.com",
+      projectId: "battle-city-bd36e",
+      storageBucket: "battle-city-bd36e.firebasestorage.app",
+      messagingSenderId: "1085542519227",
+      appId: "1:1085542519227:web:b8c0b33c32cd74e550f49e",
+      measurementId: "G-SRGGGDY32X"
+    };
+    
+    const app = initializeApp(firebaseConfig);
+    firebaseAuth = getAuth(app);
+    
+    console.log('✓ Firebase Client inicializado');
+  } catch (err) {
+    console.error('❌ Erro ao inicializar Firebase Client:', err);
+  }
+}
+
+// ─── Converter Custom Token em ID Token ────────────────────────────────────
+async function convertCustomTokenToIdToken(customToken) {
+  try {
+    if (!firebaseAuth || !signInWithCustomToken) {
+      await initFirebaseClient();
+    }
+    
+    const userCredential = await signInWithCustomToken(firebaseAuth, customToken);
+    const idToken = await userCredential.user.getIdToken();
+    
+    console.log('✓ Token convertido com sucesso');
+    return idToken;
+  } catch (err) {
+    console.error('❌ Erro ao converter token:', err);
+    throw err;
+  }
+}
+
 // ─── Screens ────────────────────────────────────────────────────────────────
 const authScreens = {
   auth: document.getElementById('screen-auth'),
@@ -23,6 +74,9 @@ function showAuthScreen(name) {
 
 // ─── Init ───────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  // Inicializar Firebase Client
+  initFirebaseClient();
+
   // Carrega token do localStorage se existir
   const savedToken = localStorage.getItem('battle-city-token');
   if (savedToken) {
@@ -79,8 +133,11 @@ function setupAuthButtons() {
       const data = await res.json();
       if (!data.ok) throw new Error(data.error);
 
+      // Converter custom token em ID token
+      const idToken = await convertCustomTokenToIdToken(data.token);
+
       // Salvar dados
-      currentToken = data.token;
+      currentToken = idToken;
       currentUserId = data.userId;
       currentUsername = data.username;
 
@@ -128,8 +185,11 @@ function setupAuthButtons() {
       const data = await res.json();
       if (!data.ok) throw new Error(data.error);
 
+      // Converter custom token em ID token
+      const idToken = await convertCustomTokenToIdToken(data.token);
+
       // Salvar dados
-      currentToken = data.token;
+      currentToken = idToken;
       currentUserId = data.userId;
       currentUsername = data.username;
 
