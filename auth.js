@@ -107,22 +107,31 @@ async function register(username, email, password) {
       throw new Error('Username, email e password são obrigatórios');
     }
 
+    // Gerar hash da senha com bcryptjs
+    const bcrypt = require('bcryptjs');
+    const passwordHash = await bcrypt.hash(password, 10);
+
     // Criar usuário no Firebase Admin
     const { createFirebaseUser } = require('./firebase');
     const firebaseUser = await createFirebaseUser(email, password, username);
 
-    // Sincronizar com banco de dados
-    const dbUser = await syncUserToDatabase(firebaseUser);
+    // Criar usuário no banco de dados com password hash
+    const userId = await db.createUserWithPassword(
+      firebaseUser.uid,
+      username,
+      email,
+      passwordHash
+    );
 
     // Gerar custom token Firebase (válido para verificação no servidor)
     const token = await createCustomToken(firebaseUser.uid);
 
     return {
       token,
-      userId: dbUser.id,
+      userId,
       firebaseUID: firebaseUser.uid,
-      username: dbUser.username,
-      email: dbUser.email,
+      username,
+      email,
     };
   } catch (error) {
     console.error('❌ Erro ao registrar:', error.message);
@@ -140,19 +149,28 @@ async function login(username, password) {
     // Buscar usuário no banco de dados
     const user = await db.getUserByUsername(username);
     if (!user) {
+      console.log('❌ Usuário não encontrado:', username);
       throw new Error('Usuário não encontrado');
+    }
+
+    // Verificar se tem password_hash
+    if (!user.password_hash) {
+      console.log('❌ Senha não definida para usuário:', username);
+      throw new Error('Usuário não tem senha definida');
     }
 
     // Verificar senha com bcryptjs
     const bcrypt = require('bcryptjs');
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
     if (!isPasswordValid) {
+      console.log('❌ Senha incorreta para:', username);
       throw new Error('Senha incorreta');
     }
 
     // Gerar custom token Firebase (válido para verificação no servidor)
     const token = await createCustomToken(user.firebase_uid);
 
+    console.log('✓ Login bem-sucedido:', username);
     return {
       token,
       userId: user.id,

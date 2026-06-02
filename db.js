@@ -177,6 +177,23 @@ async function createUserFromFirebase(firebaseUID, email, displayName = null, ph
   return result.lastID;
 }
 
+async function createUserWithPassword(firebaseUID, username, email, passwordHash, photoURL = null) {
+  try {
+    const result = await dbRun(
+      `INSERT INTO users (firebase_uid, username, email, password_hash, avatar_url) 
+       VALUES ($1, $2, $3, $4, $5) 
+       RETURNING id`,
+      [firebaseUID, username, email, passwordHash, photoURL]
+    );
+    return result;
+  } catch (error) {
+    if (error.message.includes('duplicate key') || error.message.includes('UNIQUE')) {
+      throw new Error('Username ou email já existe');
+    }
+    throw error;
+  }
+}
+
 async function getUserByFirebaseUID(firebaseUID) {
   return dbGet(
     'SELECT * FROM users WHERE firebase_uid = $1',
@@ -318,6 +335,7 @@ module.exports = {
   // Users
   createUser,
   createUserFromFirebase,
+  createUserWithPassword,
   getUserByFirebaseUID,
   getUserByUsername,
   getUserById,
