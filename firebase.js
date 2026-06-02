@@ -36,6 +36,8 @@ if (privateKey) {
 }
 
 // Inicializar Firebase Admin
+let firebaseAuth;
+
 try {
   admin.initializeApp({
     credential: admin.credential.cert({
@@ -46,7 +48,7 @@ try {
     projectId: process.env.FIREBASE_PROJECT_ID,
   });
 
-  const firebaseAuth = admin.auth();
+  firebaseAuth = admin.auth();
   console.log('✓ Firebase Admin SDK inicializado com sucesso');
 } catch (error) {
   console.error('❌ Erro ao inicializar Firebase:', error.message);
