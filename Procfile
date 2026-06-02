@@ -1,1 +1,1 @@
-web: npm install --legacy-peer-deps && node server.js
+web: node server.js
