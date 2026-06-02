@@ -1,0 +1,23 @@
+# Back4App Configuration for Battle City
+# This file helps Back4App deploy the application correctly
+
+## Build Configuration
+# Use npm install instead of npm ci to install dependencies
+build_command: npm install --legacy-peer-deps && npm run build || true
+
+## Runtime Configuration
+# Node version
+nodejs_version: 18
+
+## Environment Variables Required
+# Ensure these are set in Back4App Dashboard:
+# - DATABASE_URL
+# - SUPABASE_URL
+# - SUPABASE_ANON_KEY
+# - FIREBASE_PROJECT_ID
+# - FIREBASE_CLIENT_EMAIL
+# - FIREBASE_PRIVATE_KEY
+
+## Health Check
+# The app provides a /health endpoint
+health_check_path: /health
