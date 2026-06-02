@@ -1,0 +1,109 @@
+'use strict';
+
+const { verifyToken, getFirebaseUser } = require('./firebase');
+const db = require('./db');
+
+// ─── Middleware de Autenticação Firebase (Express) ────────────────────────
+async function authMiddleware(req, res, next) {
+  try {
+    const token = req.headers.authorization?.split(' ')[1] || req.query.token;
+
+    if (!token) {
+      return res.status(401).json({ ok: false, error: 'Token ausente' });
+    }
+
+    // Verificar token Firebase
+    const decodedToken = await verifyToken(token);
+    if (!decodedToken) {
+      return res.status(401).json({ ok: false, error: 'Token inválido ou expirado' });
+    }
+
+    // Adicionar informações do usuário no request
+    req.userId = decodedToken.uid;
+    req.userEmail = decodedToken.email;
+    
+    next();
+  } catch (error) {
+    console.error('❌ Erro no middleware de autenticação:', error.message);
+    res.status(500).json({ ok: false, error: 'Erro ao autenticar' });
+  }
+}
+
+// ─── Middleware Socket.io com Firebase ──────────────────────────────────────
+async function socketAuthMiddleware(socket, next) {
+  try {
+    const token = socket.handshake.auth.token;
+
+    if (!token) {
+      return next(new Error('Token ausente'));
+    }
+
+    // Verificar token Firebase
+    const decodedToken = await verifyToken(token);
+    if (!decodedToken) {
+      return next(new Error('Token inválido'));
+    }
+
+    // Adicionar informações do usuário no socket
+    socket.userId = decodedToken.uid;
+    socket.userEmail = decodedToken.email;
+    
+    next();
+  } catch (error) {
+    console.error('❌ Erro no middleware Socket.io:', error.message);
+    next(new Error('Erro ao autenticar'));
+  }
+}
+
+// ─── Verificar Token (para uso direto) ──────────────────────────────────────
+async function verifyFirebaseToken(token) {
+  try {
+    const decodedToken = await verifyToken(token);
+    return decodedToken;
+  } catch (error) {
+    return null;
+  }
+}
+
+// ─── Sincronizar Usuário Firebase com Banco de Dados ────────────────────────
+async function syncUserToDatabase(firebaseUser) {
+  try {
+    // Verificar se usuário já existe no banco
+    const existingUser = await db.getUserByFirebaseUID(firebaseUser.uid);
+
+    if (existingUser) {
+      // Atualizar avatar se houver
+      if (firebaseUser.photoURL) {
+        await db.updateUserAvatar(existingUser.id, firebaseUser.photoURL);
+      }
+      return existingUser;
+    }
+
+    // Criar novo usuário no banco
+    const userId = await db.createUserFromFirebase(
+      firebaseUser.uid,
+      firebaseUser.email,
+      firebaseUser.displayName,
+      firebaseUser.photoURL
+    );
+
+    return {
+      id: userId,
+      firebase_uid: firebaseUser.uid,
+      email: firebaseUser.email,
+      username: firebaseUser.displayName || firebaseUser.email.split('@')[0],
+      avatar_url: firebaseUser.photoURL,
+    };
+  } catch (error) {
+    console.error('❌ Erro ao sincronizar usuário:', error.message);
+    throw error;
+  }
+}
+
+module.exports = {
+  verifyToken: verifyFirebaseToken,
+  authMiddleware,
+  socketAuthMiddleware,
+  syncUserToDatabase,
+};
+

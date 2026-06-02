@@ -1,0 +1,55 @@
+{
+  "name": "battle-city-multiplayer",
+  "description": "Battle City NES clone - Multiplayer via Socket.io with Firebase Auth & Supabase DB",
+  "keywords": ["game", "socket.io", "battle-city", "multiplayer", "firebase", "supabase"],
+  "repository": "https://github.com/MarceloCAF28/battle-city",
+  "success_url": "/",
+  "env": {
+    "NODE_ENV": {
+      "description": "Environment mode",
+      "value": "production"
+    },
+    "PORT": {
+      "description": "Server port",
+      "value": "8080"
+    },
+    "DATABASE_URL": {
+      "description": "PostgreSQL connection string from Supabase",
+      "value": "",
+      "required": true
+    },
+    "SUPABASE_URL": {
+      "description": "Supabase project URL",
+      "value": "",
+      "required": true
+    },
+    "SUPABASE_KEY": {
+      "description": "Supabase anon/public key",
+      "value": "",
+      "required": true
+    },
+    "FIREBASE_PROJECT_ID": {
+      "description": "Firebase project ID",
+      "value": "",
+      "required": true
+    },
+    "FIREBASE_CLIENT_EMAIL": {
+      "description": "Firebase service account client email",
+      "value": "",
+      "required": true
+    },
+    "FIREBASE_PRIVATE_KEY": {
+      "description": "Firebase service account private key (with \\n for newlines)",
+      "value": "",
+      "required": true
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ],
+  "scripts": {
+    "postdeploy": "npm start"
+  }
+}
