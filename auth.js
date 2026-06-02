@@ -114,7 +114,17 @@ async function register(username, email, password) {
     // Sincronizar com banco de dados
     const dbUser = await syncUserToDatabase(firebaseUser);
 
+    // Gerar token JWT (mesmo do login)
+    const jwt = require('jsonwebtoken');
+    const JWT_SECRET = process.env.JWT_SECRET || 'sua_chave_super_secreta_mudar_em_producao_12345';
+    const token = jwt.sign(
+      { uid: dbUser.firebase_uid, email: dbUser.email, userId: dbUser.id },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
     return {
+      token,
       userId: dbUser.id,
       firebaseUID: firebaseUser.uid,
       username: dbUser.username,
