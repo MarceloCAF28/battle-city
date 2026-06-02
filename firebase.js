@@ -9,34 +9,50 @@ if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_PRIVATE_KEY || !pr
   process.exit(1);
 }
 
-// Decodificar private key (suporta base64 ou string normal)
+// Decodificar private key com múltiplas estratégias
 let privateKey = process.env.FIREBASE_PRIVATE_KEY;
-try {
-  // Tenta decodificar como base64 (melhor para variáveis de ambiente)
-  if (!privateKey.includes('BEGIN PRIVATE KEY')) {
+
+// Estratégia 1: Se for base64, decodificar
+if (privateKey && !privateKey.includes('BEGIN PRIVATE KEY')) {
+  try {
     privateKey = Buffer.from(privateKey, 'base64').toString('utf-8');
+    console.log('✓ Chave decodificada de base64');
+  } catch (e) {
+    console.warn('⚠️  Não era base64, tentando como string');
   }
-} catch (e) {
-  // Se não for base64, usa como está
-  console.warn('⚠️  Chave privada não é base64, usando como string');
 }
 
-// Garantir quebras de linha corretas
-privateKey = privateKey.replace(/\\n/g, '\n');
+// Estratégia 2: Converter escape sequences corretos
+if (privateKey) {
+  // Converter \n literal para quebras de linha reais
+  // Isso lida com "\\n" (escape duplo) e "\n" (escape simples)
+  privateKey = privateKey
+    .replace(/\\\\n/g, '\n')  // Primeiro: \\\n → \n
+    .replace(/\\n/g, '\n')     // Depois: \\n → \n
+    .replace(/\\t/g, '\t')     // Tab também
+    .replace(/\\r/g, '\r');    // Carriage return também
+  
+  console.log('✓ Escape sequences corrigidas');
+}
 
 // Inicializar Firebase Admin
-admin.initializeApp({
-  credential: admin.credential.cert({
+try {
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: privateKey,
+    }),
     projectId: process.env.FIREBASE_PROJECT_ID,
-    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-    privateKey: privateKey,
-  }),
-  projectId: process.env.FIREBASE_PROJECT_ID,
-});
+  });
 
-const firebaseAuth = admin.auth();
-
-console.log('✓ Firebase Admin SDK inicializado');
+  const firebaseAuth = admin.auth();
+  console.log('✓ Firebase Admin SDK inicializado com sucesso');
+} catch (error) {
+  console.error('❌ Erro ao inicializar Firebase:', error.message);
+  console.error('   Verifique as credenciais FIREBASE_PRIVATE_KEY');
+  process.exit(1);
+}
 
 // ─── Verificar Token Firebase ───────────────────────────────────────────────
 async function verifyToken(token) {
