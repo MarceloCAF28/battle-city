@@ -9,12 +9,27 @@ if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_PRIVATE_KEY || !pr
   process.exit(1);
 }
 
+// Decodificar private key (suporta base64 ou string normal)
+let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+try {
+  // Tenta decodificar como base64 (melhor para variáveis de ambiente)
+  if (!privateKey.includes('BEGIN PRIVATE KEY')) {
+    privateKey = Buffer.from(privateKey, 'base64').toString('utf-8');
+  }
+} catch (e) {
+  // Se não for base64, usa como está
+  console.warn('⚠️  Chave privada não é base64, usando como string');
+}
+
+// Garantir quebras de linha corretas
+privateKey = privateKey.replace(/\\n/g, '\n');
+
 // Inicializar Firebase Admin
 admin.initializeApp({
   credential: admin.credential.cert({
     projectId: process.env.FIREBASE_PROJECT_ID,
     clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-    privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    privateKey: privateKey,
   }),
   projectId: process.env.FIREBASE_PROJECT_ID,
 });
