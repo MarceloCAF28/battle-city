@@ -36,6 +36,7 @@ async function showScoreboard(matchData) {
       console.log('📤 Enviando dados da partida:', myMatchData);
       console.log('   currentToken:', currentToken ? 'OK' : 'AUSENTE');
       console.log('   currentUserId:', currentUserId);
+      console.log('   currentRoomId:', currentRoomId);
       
       const response = await fetch('/api/match-end', {
         method: 'POST',
@@ -44,7 +45,7 @@ async function showScoreboard(matchData) {
           'Authorization': `Bearer ${currentToken}`,
         },
         body: JSON.stringify({
-          matchId: currentRoomId,
+          matchId: currentRoomId || 'unknown',
           matchData: myMatchData,
         }),
       });

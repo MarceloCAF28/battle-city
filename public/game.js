@@ -108,6 +108,7 @@ const INTERP_MS  = 80;  // interpolation window (ms)
 let myId      = null;
 let myColor   = null;
 let roomId    = null;
+let currentRoomId = null; // Para compatibilidade com scoreboard.js
 let map       = null;
 let gameRunning = false;
 let myMatchData = null; // Armazena dados da partida do jogador
@@ -168,6 +169,7 @@ function initGame(res) {
   myId    = res.playerId;
   myColor = res.color;
   roomId  = res.roomId;
+  currentRoomId = res.roomId; // Também atualiza currentRoomId
   map     = res.map;
   gameRunning = true;
   myMatchData = { kills: 0, deaths: 0, score: 0, position: 0, won: false, survivalTime: Date.now() };
