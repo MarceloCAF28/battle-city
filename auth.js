@@ -1,6 +1,6 @@
 'use strict';
 
-const { verifyToken, getFirebaseUser } = require('./firebase');
+const { verifyToken, getFirebaseUser, createCustomToken } = require('./firebase');
 const db = require('./db');
 
 // ─── Middleware de Autenticação Firebase (Express) ────────────────────────
@@ -114,14 +114,8 @@ async function register(username, email, password) {
     // Sincronizar com banco de dados
     const dbUser = await syncUserToDatabase(firebaseUser);
 
-    // Gerar token JWT (mesmo do login)
-    const jwt = require('jsonwebtoken');
-    const JWT_SECRET = process.env.JWT_SECRET || 'sua_chave_super_secreta_mudar_em_producao_12345';
-    const token = jwt.sign(
-      { uid: dbUser.firebase_uid, email: dbUser.email, userId: dbUser.id },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    // Gerar custom token Firebase (válido para verificação no servidor)
+    const token = await createCustomToken(firebaseUser.uid);
 
     return {
       token,
@@ -156,14 +150,8 @@ async function login(username, password) {
       throw new Error('Senha incorreta');
     }
 
-    // Gerar token JWT (simples para este caso)
-    const jwt = require('jsonwebtoken');
-    const JWT_SECRET = process.env.JWT_SECRET || 'seu_secret_super_seguro';
-    const token = jwt.sign(
-      { uid: user.firebase_uid, email: user.email, userId: user.id },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    // Gerar custom token Firebase (válido para verificação no servidor)
+    const token = await createCustomToken(user.firebase_uid);
 
     return {
       token,

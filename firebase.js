@@ -131,6 +131,18 @@ async function updateFirebaseUser(uid, updates) {
   }
 }
 
+// ─── Criar Custom Token Firebase ───────────────────────────────────────────
+async function createCustomToken(uid) {
+  try {
+    const token = await firebaseAuth.createCustomToken(uid);
+    console.log('✓ Custom token criado para UID:', uid);
+    return token;
+  } catch (error) {
+    console.error('❌ Erro ao criar custom token:', error.message);
+    throw error;
+  }
+}
+
 module.exports = {
   admin,
   firebaseAuth,
@@ -139,4 +151,5 @@ module.exports = {
   createFirebaseUser,
   deleteFirebaseUser,
   updateFirebaseUser,
+  createCustomToken,
 };
