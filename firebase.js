@@ -59,10 +59,19 @@ try {
 // ─── Verificar Token Firebase ───────────────────────────────────────────────
 async function verifyToken(token) {
   try {
+    if (!token) {
+      console.error('❌ Token vazio');
+      return null;
+    }
+
+    console.log('🔍 Verificando token (primeiros 20 chars):', token.substring(0, 20) + '...');
+    
     const decodedToken = await firebaseAuth.verifyIdToken(token);
+    console.log('✓ Token verificado:', decodedToken.uid);
     return decodedToken;
   } catch (error) {
     console.error('❌ Erro ao verificar token:', error.message);
+    console.error('   Tipo de erro:', error.code || 'unknown');
     return null;
   }
 }

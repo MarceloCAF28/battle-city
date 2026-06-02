@@ -215,6 +215,19 @@ async function getUserById(id) {
   );
 }
 
+async function getUserIdByFirebaseUID(firebaseUID) {
+  try {
+    const user = await dbGet(
+      'SELECT id FROM users WHERE firebase_uid = $1',
+      [firebaseUID]
+    );
+    return user ? user.id : null;
+  } catch (error) {
+    console.error('❌ Erro ao buscar user_id por Firebase UID:', error);
+    return null;
+  }
+}
+
 async function updateUserAvatar(userId, avatarUrl) {
   await dbRun(
     'UPDATE users SET avatar_url = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
@@ -339,6 +352,7 @@ module.exports = {
   getUserByFirebaseUID,
   getUserByUsername,
   getUserById,
+  getUserIdByFirebaseUID,
   updateUserAvatar,
   // Matches
   createMatch,

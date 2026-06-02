@@ -9,19 +9,34 @@ async function authMiddleware(req, res, next) {
     const token = req.headers.authorization?.split(' ')[1] || req.query.token;
 
     if (!token) {
+      console.log('❌ Token ausente em:', req.path);
       return res.status(401).json({ ok: false, error: 'Token ausente' });
     }
+
+    console.log(`🔐 Verificando token para ${req.method} ${req.path}`);
 
     // Verificar token Firebase
     const decodedToken = await verifyToken(token);
     if (!decodedToken) {
+      console.log('❌ Token inválido ou expirado para:', req.path);
       return res.status(401).json({ ok: false, error: 'Token inválido ou expirado' });
     }
 
+    // Converter Firebase UID para user_id do banco de dados
+    const firebaseUID = decodedToken.uid;
+    const userId = await db.getUserIdByFirebaseUID(firebaseUID);
+    
+    if (!userId) {
+      console.log('❌ Usuário não encontrado no banco para Firebase UID:', firebaseUID);
+      return res.status(401).json({ ok: false, error: 'Usuário não encontrado' });
+    }
+
     // Adicionar informações do usuário no request
-    req.userId = decodedToken.uid;
+    req.userId = userId; // user_id do banco de dados
+    req.firebaseUID = firebaseUID;
     req.userEmail = decodedToken.email;
     
+    console.log('✓ Token verificado, user_id:', req.userId, 'firebaseUID:', firebaseUID);
     next();
   } catch (error) {
     console.error('❌ Erro no middleware de autenticação:', error.message);
@@ -44,8 +59,17 @@ async function socketAuthMiddleware(socket, next) {
       return next(new Error('Token inválido'));
     }
 
+    // Converter Firebase UID para user_id do banco de dados
+    const firebaseUID = decodedToken.uid;
+    const userId = await db.getUserIdByFirebaseUID(firebaseUID);
+    
+    if (!userId) {
+      return next(new Error('Usuário não encontrado'));
+    }
+
     // Adicionar informações do usuário no socket
-    socket.userId = decodedToken.uid;
+    socket.userId = userId; // user_id do banco de dados
+    socket.firebaseUID = firebaseUID;
     socket.userEmail = decodedToken.email;
     
     next();
