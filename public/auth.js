@@ -73,7 +73,7 @@ function showAuthScreen(name) {
 }
 
 // ─── Init ───────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   // Inicializar Firebase Client
   initFirebaseClient();
 
@@ -83,9 +83,17 @@ document.addEventListener('DOMContentLoaded', () => {
     currentToken = savedToken;
     currentUserId = localStorage.getItem('battle-city-userId');
     currentUsername = localStorage.getItem('battle-city-username');
+    
     initSocket();
-    loadUserStats();
-    showAuthScreen('lobby');
+    
+    try {
+      await loadUserStats(); // Tenta carregar os dados do usuário
+      showAuthScreen('lobby');
+    } catch (err) {
+      console.error('Token antigo ou inválido detectado. Limpando sessão...');
+      document.getElementById('btn-logout').click();
+    }
+    
   } else {
     showAuthScreen('auth');
   }
@@ -94,6 +102,9 @@ document.addEventListener('DOMContentLoaded', () => {
   setupAuthButtons();
   setupLogoutButton();
   setupLeaderboardButton();
+  
+  // CHAMADA ADICIONADA: Ativa os ouvintes de clique do avatar assim que a página carregar
+  setupAvatarButtons();
 });
 
 // ─── Auth Tabs ──────────────────────────────────────────────────────────────
@@ -101,17 +112,15 @@ function setupAuthTabButtons() {
   document.querySelectorAll('.auth-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       const tabName = tab.dataset.tab;
-      // Remove active class
       document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.auth-tab-content').forEach(c => c.classList.remove('active'));
-      // Add active class
       tab.classList.add('active');
       document.getElementById(`tab-${tabName}`).classList.add('active');
     });
   });
 }
 
-// ─── Login ──────────────────────────────────────────────────────────────────
+// ─── Login / Registro ───────────────────────────────────────────────────────
 function setupAuthButtons() {
   // Login button
   document.getElementById('btn-login').addEventListener('click', async () => {
@@ -133,10 +142,8 @@ function setupAuthButtons() {
       const data = await res.json();
       if (!data.ok) throw new Error(data.error);
 
-      // Converter custom token em ID token
       const idToken = await convertCustomTokenToIdToken(data.token);
 
-      // Salvar dados
       currentToken = idToken;
       currentUserId = data.userId;
       currentUsername = data.username;
@@ -145,7 +152,6 @@ function setupAuthButtons() {
       localStorage.setItem('battle-city-userId', currentUserId);
       localStorage.setItem('battle-city-username', currentUsername);
 
-      // Limpar inputs
       document.getElementById('login-username').value = '';
       document.getElementById('login-password').value = '';
       document.getElementById('auth-error-msg').textContent = '';
@@ -185,10 +191,8 @@ function setupAuthButtons() {
       const data = await res.json();
       if (!data.ok) throw new Error(data.error);
 
-      // Converter custom token em ID token
       const idToken = await convertCustomTokenToIdToken(data.token);
 
-      // Salvar dados
       currentToken = idToken;
       currentUserId = data.userId;
       currentUsername = data.username;
@@ -197,7 +201,6 @@ function setupAuthButtons() {
       localStorage.setItem('battle-city-userId', currentUserId);
       localStorage.setItem('battle-city-username', currentUsername);
 
-      // Limpar inputs
       document.getElementById('register-username').value = '';
       document.getElementById('register-email').value = '';
       document.getElementById('register-password').value = '';
@@ -212,7 +215,6 @@ function setupAuthButtons() {
     }
   });
 
-  // Enter key
   document.getElementById('login-password').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') document.getElementById('btn-login').click();
   });
@@ -228,7 +230,7 @@ function showAuthError(msg) {
   setTimeout(() => { el.style.opacity = 0; }, 4000);
 }
 
-// ─── User Info ──────────────────────────────────────────────────────────────
+// ─── User Info & Stats ──────────────────────────────────────────────────────
 function setupLogoutButton() {
   document.getElementById('btn-logout').addEventListener('click', () => {
     currentToken = null;
@@ -254,8 +256,14 @@ async function loadUserStats() {
     document.getElementById('stat-wins').textContent = stats.total_wins;
     document.getElementById('stat-kills').textContent = stats.total_kills;
     document.getElementById('stat-winrate').textContent = (stats.win_rate * 100).toFixed(1) + '%';
+    
+    // Altera dinamicamente o SRC da imagem se o usuário tiver foto no Supabase
+    if (data.user && data.user.avatar_url) {
+      document.getElementById('lobby-avatar').src = data.user.avatar_url;
+    }
   } catch (err) {
     console.error('Erro ao carregar stats:', err);
+    throw err;
   }
 }
 
@@ -283,6 +291,54 @@ function setupLeaderboardButton() {
 
   document.getElementById('btn-back-from-lb').addEventListener('click', () => {
     showAuthScreen('lobby');
+  });
+}
+
+// ─── Avatar Upload Logic (FUNÇÃO ADICIONADA) ───────────────────────────────
+function setupAvatarButtons() {
+  const btnTrigger = document.getElementById('btn-trigger-avatar');
+  const avatarInput = document.getElementById('avatar-input');
+  const lobbyAvatar = document.getElementById('lobby-avatar');
+
+  if (!btnTrigger || !avatarInput) return;
+
+  btnTrigger.addEventListener('click', () => {
+    avatarInput.click();
+  });
+
+  avatarInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    try {
+      btnTrigger.textContent = 'Subindo...';
+      btnTrigger.disabled = true;
+
+      const res = await fetch('/api/user/avatar', {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${currentToken}`
+        },
+        body: formData
+      });
+
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error);
+
+      if (lobbyAvatar) {
+        lobbyAvatar.src = data.avatarUrl;
+      }
+      console.log('✓ Foto de perfil atualizada com sucesso!');
+    } catch (err) {
+      console.error('Erro ao fazer upload do avatar:', err);
+      alert('Erro ao mudar foto: ' + err.message);
+    } finally {
+      btnTrigger.textContent = 'Mudar Foto';
+      btnTrigger.disabled = false;
+    }
   });
 }
 

@@ -30,6 +30,9 @@ const io = new Server(server, {
   transports: ['websocket'],
 });
 
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() }); // Guarda o arquivo temporariamente na memória RAM
+const supabaseUtils = require('./supabase'); // Seu arquivo de utilitários do Supabase
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -590,6 +593,32 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
+app.post('/api/user/avatar', auth.authMiddleware, upload.single('avatar'), async (req, res) => {
+  try {
+    console.log(`📸 Processando upload de avatar para o userId: ${req.userId}`);
+    
+    if (!req.file) {
+      return res.status(400).json({ ok: false, error: 'Nenhum arquivo de imagem enviado.' });
+    }
+
+    // 1. Envia a imagem para o Supabase Storage usando sua função utilitária
+    const uploadResult = await supabaseUtils.uploadImage(req.file, 'battle-city-images'); //
+    if (!uploadResult.success) {
+      throw new Error(uploadResult.error || 'Falha ao subir imagem para o Storage.');
+    }
+
+    // 2. Atualiza o campo avatar_url da tabela 'users' no PostgreSQL
+    // Certifique-se de que a função db.updateUserAvatar existe no seu db.js
+    await db.updateUserAvatar(req.userId, uploadResult.publicUrl); 
+
+    console.log('✓ Avatar atualizado com sucesso:', uploadResult.publicUrl);
+    res.json({ ok: true, avatarUrl: uploadResult.publicUrl });
+  } catch (err) {
+    console.error('❌ Erro na rota /api/user/avatar:', err.message);
+    res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
 // Login
 app.post('/api/auth/login', async (req, res) => {
   try {
@@ -605,12 +634,41 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 // Get user stats
+// Get user stats
 app.get('/api/stats', auth.authMiddleware, async (req, res) => {
   try {
-    const stats = await db.getPlayerStats(req.userId);
-    const user = await db.getUserById(req.userId);
-    res.json({ ok: true, stats, user: { id: user.id, username: user.username } });
+    const stats = await db.getPlayerStats(req.userId); //
+    const user = await db.getUserById(req.userId); //
+    
+    // CORREÇÃO AQUI: Adicionado "avatar_url: user.avatar_url" para enviar o link ao front
+    res.json({ 
+      ok: true, 
+      stats, 
+      user: { 
+        id: user.id, 
+        username: user.username,
+        avatar_url: user.avatar_url 
+      } 
+    });
   } catch (err) {
+    res.status(400).json({ ok: false, error: err.message }); //
+  }
+});
+
+app.post('/api/user/avatar', auth.authMiddleware, upload.single('avatar'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ ok: false, error: 'Nenhuma imagem enviada' });
+
+    // Envia para o bucket do Supabase Storage
+    const uploadResult = await supabaseUtils.uploadImage(req.file, 'battle-city-images');
+    if (!uploadResult.success) throw new Error(uploadResult.error);
+
+    // Atualiza o link na tabela do banco de dados
+    await db.updateUserAvatar(req.userId, uploadResult.publicUrl);
+
+    res.json({ ok: true, avatarUrl: uploadResult.publicUrl });
+  } catch (err) {
+    console.error('❌ Erro no upload de avatar:', err.message);
     res.status(400).json({ ok: false, error: err.message });
   }
 });
