@@ -55,7 +55,7 @@ const MAP_COLS        = 26;
 const MAP_ROWS        = 26;
 const TANK_SIZE       = 28;
 const BULLET_SPEED    = 16;           // tiles/s * (TILE/TICK_RATE)  → px per tick
-const TANK_SPEED      = 3.3;         // px per tick
+const TANK_SPEED      = 3.5;         // px per tick
 const MAX_PLAYERS     = 6;
 const RESPAWN_DELAY   = 3000;        // ms
 const POWERUP_INTERVAL= 12000;       // ms
@@ -66,15 +66,23 @@ const POWERUP_DURATION= 10000;       // ms for shield / extra-bullets
 function buildMap() {
   const M = Array.from({ length: MAP_ROWS }, () => Array(MAP_COLS).fill(0)); //
 
-  // 1. Bordas de aço padrão
+  // 1. Bordas de aço padrão para todos os mapas
   for (let c = 0; c < MAP_COLS; c++) { M[0][c] = 2; M[MAP_ROWS-1][c] = 2; } //
   for (let r = 0; r < MAP_ROWS; r++) { M[r][0] = 2; M[r][MAP_COLS-1] = 2;  } //
 
-  // 2. Sorteia entre 4 opções (O original + 3 novos)
+  // 2. Proteção padrão de tijolos ao redor da Águia (Base) para todos os mapas
+  const baseBricks = [
+    [22,11],[22,12],[22,13],[22,14],
+    [23,11],[23,14],
+    [24,11],[24,14]
+  ];
+  for (const [r,c] of baseBricks) M[r][c] = 1;
+
+  // 3. Sorteia entre os 4 estilos de mapa
   const mapStyle = Math.floor(Math.random() * 4) + 1;
 
   if (mapStyle === 1) {
-    // LAYOUT 1: SEU MAPA ORIGINAL INTACTO (Recuperado do seu arquivo antigo)
+    // LAYOUT 1: Seu mapa original clássico
     const brickZones = [
       [2,2],[2,3],[3,2],[3,3],[2,10],[2,11],[3,10],[3,11],[2,14],[2,15],[3,14],[3,15],[2,22],[2,23],[3,22],[3,23],
       [6,2],[6,3],[7,2],[7,3],[6,6],[6,7],[7,6],[7,7],[6,10],[6,11],[7,10],[7,11],[6,14],[6,15],[7,14],[7,15],
@@ -90,33 +98,80 @@ function buildMap() {
     for (const [r,c] of steelZones) M[r][c] = 2; //
 
   } else if (mapStyle === 2) {
-    // LAYOUT 2: Clássico Modificado (Lagos e arbustos)
-    const bricks = [[2,2],[2,3],[3,2],[3,3],[2,22],[2,23],[3,22],[3,23],[6,6],[6,7],[7,6],[7,7],[6,18],[6,19],[7,18],[7,19],[10,2],[10,3],[11,2],[11,3],[10,22],[10,23],[11,22],[11,23],[14,6],[14,7],[15,6],[15,7],[14,18],[14,19],[15,18],[15,19],[18,2],[18,3],[19,2],[19,3],[18,22],[18,23],[19,22],[19,23],[22,10],[22,11],[23,10],[23,11],[22,14],[22,15],[23,14],[23,15]]; //
-    const steels = [[5,5],[5,20],[20,5],[20,20]]; //
-    const waters = [[12,11],[12,12],[12,13],[12,14],[13,11],[13,12],[13,13],[13,14]]; //
-    const bushes = [[4,12],[4,13],[5,12],[5,13],[20,12],[20,13],[21,12],[21,13]]; //
-    for (const [r,c] of bricks) M[r][c] = 1; //
-    for (const [r,c] of steels) M[r][c] = 2; //
-    for (const [r,c] of waters) M[r][c] = 3; //
-    for (const [r,c] of bushes) M[r][c] = 4; //
+    // LAYOUT 2: FOTO 1 (Grandes quadrantes de floresta nos cantos e paredes internas)
+    // Floresta Superior Esquerda
+    for(let r=2; r<=11; r++) { for(let c=2; c<=7; c++) M[r][c] = 4; }
+    M[13][2] = 4; M[13][3] = 4;
+    // Floresta Inferior Direita
+    for(let r=14; r<=22; r++) { for(let c=18; c<=23; c++) M[r][c] = 4; }
+    for(let r=11; r<=13; r++) { for(let c=22; c<=23; c++) M[r][c] = 4; }
+
+    const bricks = [
+      [1,8],[1,9],[2,8],[2,9],[3,8],[3,9],[4,1],[4,2],[15,1],[15,2],[16,1],[16,2],[17,1],[17,2],
+      [8,8],[8,9],[8,10],[8,11],[8,12],[8,13],[8,14],[8,15],[9,12],[10,12],[11,12],
+      [6,18],[6,19],[6,20],[6,21],[6,22],[6,23],[7,18],[8,18],[9,18],[10,18],
+      [15,11],[15,12],[15,13],[15,14],[15,15],[15,16],[15,17],[16,11],[17,11],[18,11],[19,11],
+      [18,14],[18,15],[18,16],[18,17],[23,18],[23,19],[24,18],[24,19]
+    ];
+    const steels = [
+      [3,20],[3,21],[3,22],[3,23],[3,24],
+      [12,12],[12,13],[12,14],[12,15],[12,16],[12,17],
+      [21,6],[22,1],[22,2]
+    ];
+    for (const [r,c] of bricks) M[r][c] = 1;
+    for (const [r,c] of steels) M[r][c] = 2;
 
   } else if (mapStyle === 3) {
-    // LAYOUT 3: Canais de Água (Rios cruzados)
-    for (let i = 4; i < 22; i++) { if (i !== 12 && i !== 13) { M[12][i] = 3; M[i][12] = 3; } } //
-    const bricks = [[10,10],[10,11],[11,10],[14,10],[15,10],[15,11],[10,14],[10,15],[11,15],[14,15],[15,14],[15,15]]; //
-    const steels = [[11,11],[11,14],[14,11],[14,14]]; //
-    const bushes = [[3,3],[3,22],[22,3],[22,22],[12,12],[12,13],[13,12],[13,13]]; //
-    for (const [r,c] of bricks) M[r][c] = 1; //
-    for (const [r,c] of steels) M[r][c] = 2; //
-    for (const [r,c] of bushes) M[r][c] = 4; //
+    // LAYOUT 3: FOTO 2 (Labirinto de canais de água/rios serpenteantes)
+    // Rios Horizontais e Verticais conectados
+    for(let c=2; c<=11; c++) { M[6][c] = 3; M[7][c] = 3; }
+    for(let r=6; r<=15; r++) { M[r][10] = 3; M[r][11] = 3; }
+    for(let c=11; c<=15; c++) { M[10][c] = 3; M[11][c] = 3; }
+    for(let r=14; r<=15; r++) { for(let c=2; c<=5; c++) M[r][c] = 3; }
+    for(let r=10; r<=17; r++) { M[r][18] = 3; M[r][19] = 3; }
+    for(let c=18; c<=23; c++) { M[16][c] = 3; M[17][c] = 3; }
+
+    const bricks = [
+      [2,2],[2,3],[2,4],[2,5],[2,6],[2,7],[2,8],[3,8],[4,8],[5,8],
+      [3,12],[3,13],[4,12],[5,12],[6,14],[7,14],[8,14],[9,14],
+      [9,4],[9,5],[9,6],[9,7],[9,8],[10,4],[11,4],
+      [14,12],[14,13],[14,14],[14,15],
+      [2,14],[2,15],[2,16],[2,17],[2,18],[2,19],[3,19],[4,19],[5,19],[6,19],[7,19],[8,19],[9,19],
+      [19,1],[19,2],[19,3],[19,4],[19,5],[20,1],[21,1],[23,1],[24,1],
+      [20,19],[20,20],[20,21],[21,19],[22,19],
+      [19,13],[19,14],[19,15],[19,16],[20,13]
+    ];
+    const steels = [
+      [9,10],[9,11],[12,8],[13,8],[8,18],[8,24],[11,20],[11,21],[13,20],[13,21],
+      [14,16],[14,17],[20,8],[20,9],[20,10],[20,11]
+    ];
+    for (const [r,c] of bricks) M[r][c] = 1;
+    for (const [r,c] of steels) M[r][c] = 2;
 
   } else {
-    // LAYOUT 4: Labirinto Florestal (Densidade de arbustos)
-    for (let r = 4; r < 22; r++) { for (let c = 4; c < 22; c++) { if ((r < 10 || r > 15) && (c < 10 || c > 15)) { if ((r + c) % 3 !== 0) M[r][c] = 4; } } } //
-    const bricks = [[12,4],[12,5],[12,6],[13,4],[13,5],[13,6],[12,19],[12,20],[12,21],[13,19],[13,20],[13,21]]; //
-    const steels = [[8,12],[9,12],[16,12],[17,12],[12,8],[12,9],[12,16],[12,17]]; //
-    for (const [r,c] of bricks) M[r][c] = 1; //
-    for (const [r,c] of steels) M[r][c] = 2; //
+    // LAYOUT 4: FOTO 3 (Concentric Rings / Arena Central Simétrica)
+    // Ilha central de floresta com moldura de aço
+    for(let r=9; r<=16; r++) { for(let c=8; c<=17; c++) M[r][c] = 4; }
+    
+    const steels = [
+      [5,2],[5,3],[6,2],[7,2], [5,22],[5,23],[6,23],[7,23],
+      [9,11],[9,12],[9,13],[9,14],[16,11],[16,12],[16,13],[16,14],
+      [12,2],[13,2],[14,2],[11,23],[12,23],[13,23],[17,23],[18,23],[19,23],
+      [23,1],[23,2],[24,1],[24,2]
+    ];
+    const bricks = [
+      [2,2],[2,3],[2,4],[2,5],[2,6],[2,7],[2,8],[2,9],[2,10],[3,2],[4,2],
+      [2,15],[2,16],[2,17],[2,18],[2,19],[2,20],[2,21],[2,22],[2,23],[3,23],[4,23],
+      [4,12],[4,13],[12,4],[13,4],[21,12],[21,13],
+      [6,6],[6,7],[6,8],[7,6],[8,6],[9,6],[10,6],
+      [6,17],[6,18],[6,19],[7,19],[8,19],[9,19],[10,19],
+      [15,6],[16,6],[17,6],[18,6],[19,6],[19,7],[19,8],
+      [15,19],[16,19],[17,19],[18,19],[19,19],[19,17],[19,18],
+      [16,2],[17,2],[18,2],[19,2],[20,2],[20,3],[20,4],[20,5],[20,6],[20,7],[20,8],[20,9],[20,10],
+      [20,15],[20,16],[20,17],[20,18],[20,19],[20,20],[20,21],[20,22],[21,22],[22,22],[23,22],[24,22]
+    ];
+    for (const [r,c] of steels) M[r][c] = 2;
+    for (const [r,c] of bricks) M[r][c] = 1;
   }
 
   return M; //

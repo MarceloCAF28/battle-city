@@ -133,24 +133,24 @@ spritesheet.src = 'assets/spritesheet.png';
 ctx.imageSmoothingEnabled = false; // Mantém os pixels nítidos (Retro)
 
 const SPRITE_MAP = {
-  // Cenário (16x16 pixels na folha)
+  // Cenário (16x16 pixels na folha original)
   brick: { x: 256, y: 0,  w: 16, h: 16 },
   steel: { x: 256, y: 16, w: 16, h: 16 },
   water: { x: 256, y: 32, w: 16, h: 16 },
-  bush:  { x: 288, y: 32, w: 16, h: 16 },
+  bush:  { x: 272, y: 32, w: 16, h: 16 },
   
   // Tanque Amarelo (Você)
   tank_yellow: {
     up:    { x: 0,  y: 0, w: 16, h: 16 },
     left:  { x: 32, y: 0, w: 16, h: 16 },
-    down:  { x: 64, y: 0, w: 16, h: 16 },
+    down:  { x: 64, y: 0, w: 16, h: 15 },
     right: { x: 96, y: 0, w: 16, h: 16 }
   },
   // Tanque Verde (Outros Jogadores)
   tank_green: {
     up:    { x: 0,  y: 128, w: 16, h: 16 },
     left:  { x: 32, y: 128, w: 16, h: 16 },
-    down:  { x: 64, y: 128, w: 16, h: 16 },
+    down:  { x: 64, y: 128, w: 16, h: 15 },
     right: { x: 96, y: 128, w: 16, h: 16 }
   }
 };
@@ -316,7 +316,7 @@ function renderLoop(ts) {
 
 // ─── Drawing ─────────────────────────────────────────────────────────────────
 function drawBackground() {
-  ctx.fillStyle = '#0d1117';
+  ctx.fillStyle = '#000000';
   ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
   // subtle grid
