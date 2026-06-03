@@ -650,7 +650,7 @@ app.post('/api/match-end', auth.authMiddleware, async (req, res) => {
     }
     
     // matchData = { position, score, kills, deaths, survivalTime, won }
-    await db.updatePlayerStats(req.userId, matchData);
+    // await db.updatePlayerStats(req.userId, matchData);
     console.log('✓ Stats salvas para userId:', req.userId);
     res.json({ ok: true });
   } catch (err) {
