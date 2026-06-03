@@ -640,14 +640,14 @@ app.get('/api/stats', auth.authMiddleware, async (req, res) => {
     const stats = await db.getPlayerStats(req.userId); //
     const user = await db.getUserById(req.userId); //
     
-    // CORREÇÃO AQUI: Adicionado "avatar_url: user.avatar_url" para enviar o link ao front
+    // CORREÇÃO: Enviando o avatar_url do banco para o cliente
     res.json({ 
       ok: true, 
       stats, 
       user: { 
         id: user.id, 
         username: user.username,
-        avatar_url: user.avatar_url 
+        avatar_url: user.avatar_url // <-- ADICIONE ESTA LINHA
       } 
     });
   } catch (err) {

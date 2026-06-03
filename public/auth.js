@@ -233,37 +233,46 @@ function showAuthError(msg) {
 // ─── User Info & Stats ──────────────────────────────────────────────────────
 function setupLogoutButton() {
   document.getElementById('btn-logout').addEventListener('click', () => {
-    currentToken = null;
-    currentUserId = null;
-    currentUsername = null;
-    localStorage.removeItem('battle-city-token');
-    localStorage.removeItem('battle-city-userId');
-    localStorage.removeItem('battle-city-username');
-    showAuthScreen('auth');
+    currentToken = null; //
+    currentUserId = null; //
+    currentUsername = null; //
+    localStorage.removeItem('battle-city-token'); //
+    localStorage.removeItem('battle-city-userId'); //
+    localStorage.removeItem('battle-city-username'); //
+    
+    // CORREÇÃO: Limpa a imagem do elemento HTML imediatamente ao deslogar
+    const lobbyAvatar = document.getElementById('lobby-avatar');
+    if (lobbyAvatar) {
+      lobbyAvatar.src = 'assets/default-avatar.png';
+    }
+    
+    showAuthScreen('auth'); //
   });
 }
 
 async function loadUserStats() {
   try {
-    const res = await fetch('/api/stats', {
-      headers: { 'Authorization': `Bearer ${currentToken}` },
+    const res = await fetch('/api/stats', { //
+      headers: { 'Authorization': `Bearer ${currentToken}` }, //
     });
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.error);
+    const data = await res.json(); //
+    if (!data.ok) throw new Error(data.error); //
 
-    const stats = data.stats;
-    document.getElementById('username-display').textContent = currentUsername;
-    document.getElementById('stat-wins').textContent = stats.total_wins;
-    document.getElementById('stat-kills').textContent = stats.total_kills;
-    document.getElementById('stat-winrate').textContent = (stats.win_rate * 100).toFixed(1) + '%';
+    const stats = data.stats; //
+    document.getElementById('username-display').textContent = currentUsername; //
+    document.getElementById('stat-wins').textContent = stats.total_wins; //
+    document.getElementById('stat-kills').textContent = stats.total_kills; //
+    document.getElementById('stat-winrate').textContent = (stats.win_rate * 100).toFixed(1) + '%'; //
     
-    // Altera dinamicamente o SRC da imagem se o usuário tiver foto no Supabase
+    // CORREÇÃO: Adicionando bloco 'else' para limpar a imagem anterior
     if (data.user && data.user.avatar_url) {
-      document.getElementById('lobby-avatar').src = data.user.avatar_url;
+      document.getElementById('lobby-avatar').src = data.user.avatar_url; //
+    } else {
+      document.getElementById('lobby-avatar').src = 'assets/default-avatar.png';
     }
   } catch (err) {
-    console.error('Erro ao carregar stats:', err);
-    throw err;
+    console.error('Erro ao carregar stats:', err); //
+    throw err; //
   }
 }
 
